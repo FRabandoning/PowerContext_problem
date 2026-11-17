@@ -6,6 +6,8 @@ StudyLoop 是一个面向数据结构复习的本地 Web 应用：它会记住�
 - 指定技术：**PowerContext**（记忆与上下文），本地部署，无需模型 API Key
 - 开发工具：Qoder CN（见 [docs/DEVLOG.md](docs/DEVLOG.md)）
 - 记忆存储：PowerContext Server 1.2.0（SQLite 后端）
+- 项目网站：<https://studyloop-7cdph2t6uli.qoder.zone>（Qoder Sites，公开访问）
+- 代码仓库：<https://github.com/FRabandoning/PowerContext_problem/tree/qoder-studyloop/qoder>
 
 ## 1. 解决的问题
 

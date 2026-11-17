@@ -55,7 +55,12 @@ Qoder 生成并迭代了以下模块：
 
 ## 5. 站点发布
 
-项目展示网站使用 Qoder Sites 创建并发布，包含项目简介、技术分工、运行说明、截图与仓库链接。发布地址见 README 顶部「项目网站」或提交信息。
+项目展示网站使用 Qoder Sites 创建并发布，包含项目简介、技术分工、运行说明、截图与仓库链接：
+
+- 发布地址：<https://studyloop-7cdph2t6uli.qoder.zone>
+- 访问范围：任何人都可访问（已按赛题要求在 Qoder Sites 中设为公开，并用未登录请求确认返回 200）
+
+代码仓库位于团队仓库 `FRabandoning/PowerContext_problem` 的 `qoder-studyloop` 分支（基于 `2026-competition-ecosystem` 创建），资产在 `qoder/` 目录。
 
 ## 6. 说明
 
