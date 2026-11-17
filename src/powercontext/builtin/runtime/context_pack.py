@@ -131,10 +131,10 @@ class ContextPack:
         }
         if payload["digest"] != _digest(unsigned):
             raise ContextPackError("pack digest mismatch")  # noqa: TRY003
-        pack = cls(items, payload["digest"], 0)
-        if not _is_int(payload["byte_count"]) or payload["byte_count"] != len(pack.to_bytes()):
+        expected = cls.build(items)
+        if not _is_int(payload["byte_count"]) or payload["byte_count"] != expected.byte_count:
             raise ContextPackError("pack byte_count mismatch")  # noqa: TRY003
-        return cls(items, payload["digest"], payload["byte_count"])
+        return expected
 
 
 @dataclass(frozen=True)
