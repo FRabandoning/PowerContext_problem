@@ -140,7 +140,11 @@ from powercontext.builtin.runtime.decision_model import (
 from powercontext.builtin.runtime.family_processing import FAMILY_BINDINGS, FamilyWorkerSpec, run_family_worker
 from powercontext.builtin.runtime.memory_write_gate import build_memory_write_gate
 from powercontext.builtin.runtime.models import MemorySearchMode, RuntimeCapabilities
-from powercontext.builtin.runtime.processing_discovery import SourceProcessingPendingProvider, enabled_profile_scopes
+from powercontext.builtin.runtime.processing_discovery import (
+    SourceCountAdmissionFilter,
+    SourceProcessingPendingProvider,
+    enabled_profile_scopes,
+)
 from powercontext.builtin.runtime.processing_registry import (
     canonical_processing_manifest,
     dream_operations,
@@ -178,6 +182,11 @@ if TYPE_CHECKING:
 
 ValueT = TypeVar("ValueT")
 logger = logging.getLogger(__name__)
+
+# Conservative poll used when a count threshold is configured without an
+# explicit schedule. Native admission still stays gated by distinct identity
+# count; this interval only makes the gate re-evaluated promptly.
+_COUNT_TRIGGER_POLL_SECONDS = 0.5
 
 
 class BuiltinConfigurationError(RuntimeError):
@@ -769,8 +778,25 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
             )
         else:
             entrypoint = partial(run_family_worker, FamilyWorkerSpec(config=config, worker_security=worker_security))
-        interval = None if family == "profile" else automatic[family]
         binding = canonical[family]
+        interval = None if family == "profile" else automatic[family]
+        threshold = {
+            "memory": config.runtime.memory_source_count_threshold,
+            "topic-memory": config.runtime.topic_memory_source_count_threshold,
+        }.get(family)
+        schedule = automatic[family] if family in {"memory", "topic-memory"} else None
+        if interval is None and threshold is not None:
+            # Threshold-only admission: enable a conservative poll so the count
+            # gate is re-evaluated. A configured schedule keeps its own cadence.
+            interval = _COUNT_TRIGGER_POLL_SECONDS
+        if family == "profile":
+            scope_filter = enabled_profile_scopes
+        elif threshold is not None and schedule is None:
+            # Time and count are OR: with an explicit schedule, time always
+            # triggers and the count gate must not block it.
+            scope_filter = SourceCountAdmissionFilter(binding, threshold)
+        else:
+            scope_filter = None
         configured.append(
             ArtifactProcessingBinding(
                 binding_name=binding,
@@ -786,7 +812,7 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
                 pending_provider=None
                 if family == "skill"
                 else SourceProcessingPendingProvider(contexts.database, binding, family),
-                automatic_scope_filter=enabled_profile_scopes if family == "profile" else None,
+                automatic_scope_filter=scope_filter,
             )
         )
     _validate_processing_registrations(configured)

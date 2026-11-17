@@ -247,6 +247,19 @@ class CompositeMemoryIndex:
         request: MemorySearchRequest,
         /,
     ) -> MemorySearchChannels:
+        # SeekDB expresses both candidate channels in one native statement. The
+        # dialect gate keeps SQLite/OceanBase on their independent channel path
+        # and avoids importing the seekdb binding for unrelated backends.
+        driver = str(getattr(connection.dialect, "driver", "")).lower()
+        engine = getattr(connection, "engine", None)
+        drivername = "" if engine is None else str(getattr(getattr(engine, "url", None), "drivername", "")).lower()
+        if request.mode == "hybrid" and ("aseekdb" in driver or "aseekdb" in drivername):
+            from powercontext.builtin.persistence.seekdb.memory_index import search_native_hybrid
+
+            profile = request.embedding_profile
+            if profile is None:
+                raise CapabilityNotSupportedError("hybrid")
+            return await search_native_hybrid(connection, scope_id, request, profile)
         fts: tuple[MemoryChannelHit, ...] = ()
         vector: tuple[MemoryChannelHit, ...] = ()
         for index in self.indexes:

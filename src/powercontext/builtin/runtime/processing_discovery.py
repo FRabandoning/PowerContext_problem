@@ -45,6 +45,43 @@ async def enabled_profile_scopes(connection: AsyncConnection, scope_ids: tuple[s
     return frozenset(rows)
 
 
+class SourceCountAdmissionFilter:
+    """Admit automatic work only after N distinct new Source identities accrue.
+
+    The Source journal holds exactly one row per distinct identity, so the
+    number of rows strictly after a family's persisted cursor equals the number
+    of new identities for that scope/family. Counts are intentionally scoped to
+    one binding, keeping families independent. Lineage-only Sources still own a
+    journal position and therefore count toward the threshold, while the
+    generation window separately excludes them as evidence. A handoff-receipt
+    trust upgrade reuses an existing row and never raises this count.
+    """
+
+    def __init__(self, binding_name: str, threshold: int) -> None:
+        self._binding = binding_name
+        self._threshold = threshold
+
+    async def __call__(self, connection: AsyncConnection, scope_ids: tuple[str, ...]) -> frozenset[str]:
+        if not scope_ids:
+            return frozenset()
+        cursors = await SourceCursorRepository().load_many(connection, scope_ids, self._binding)
+        heads = SOURCE_JOURNAL_HEADS_TABLE
+        rows = (
+            await connection.execute(
+                select(heads.c.scope_id, heads.c.position).where(heads.c.scope_id.in_(scope_ids))
+            )
+        ).all()
+        positions = {str(row[0]): int(row[1]) for row in rows}
+        eligible = set()
+        for scope in scope_ids:
+            stored = cursors.get(scope)
+            after = 0 if stored is None else stored.cursor.sequence
+            high = positions.get(scope, 0)
+            if high - after >= self._threshold:
+                eligible.add(scope)
+        return frozenset(eligible)
+
+
 class SourceProcessingPendingProvider:
     """Inspect journal metadata, never Source bodies, prompts, or models."""
 
