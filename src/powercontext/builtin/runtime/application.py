@@ -24,7 +24,7 @@ from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from pydantic import BaseModel, JsonValue, ValidationError
 
@@ -160,6 +160,7 @@ from powercontext.builtin.records import (
 )
 from powercontext.builtin.review.generation import GeneratedCandidateResult, ReviewedGenerationService
 from powercontext.builtin.review.service import ReviewService
+from powercontext.builtin.runtime.context_pack import ContextPack, ContextPackDelta
 from powercontext.builtin.runtime._scope_cache import (
     DEFAULT_SCOPE_CACHE_SIZE,
     ScopeCache,
@@ -249,6 +250,7 @@ from powercontext.builtin.runtime.recall_sufficiency import (
     recall_effort,
 )
 from powercontext.builtin.runtime.statistics import RelationalScopedStatistics, overview_selection
+from powercontext.builtin.runtime.source_lifecycle import SourceLifecycleApplication
 from powercontext.builtin.scope import ScopeApplication, ScopeDescriptor, ScopeSelection
 from powercontext.builtin.scope.subject_sources import SubjectSourceService
 from powercontext.builtin.sources import (
@@ -299,6 +301,7 @@ if TYPE_CHECKING:
 
     from powercontext.builtin.handoff_report.application import HandoffReportApplication
     from powercontext.builtin.runtime.artifact_processing import ArtifactProcessingSupervisors
+    from powercontext.builtin.runtime.relational import RelationalContexts
 
 
 class TopicMemorySearch(Protocol):
@@ -846,6 +849,22 @@ class ScopedContextApplication:
             if authorize_scopes is not None:
                 await authorize_scopes((self.scope_id, *scope.context_references))
             return await self._prepare(request, scope)
+
+    async def prepare_incremental(
+        self,
+        request: PrepareContextRequest,
+        /,
+        *,
+        base_pack: ContextPack | None = None,
+        authorize_scopes: Callable[[tuple[str, ...]], Awaitable[None]] | None = None,
+    ) -> ContextPack | ContextPackDelta:
+        """Prepare the current context as a full pack, or as a delta against a base pack."""
+
+        prepared = await self.prepare(request, authorize_scopes=authorize_scopes)
+        pack = ContextPack.from_content(prepared.content)
+        if base_pack is None:
+            return pack
+        return ContextPackDelta.between(base_pack, pack)
 
     async def _prepare(self, request: PrepareContextRequest, scope: ScopeDescriptor, /) -> PreparedContext:
         build, effort = await self._prepare_build(request, scope)
@@ -3111,6 +3130,7 @@ class BuiltinRuntime:
         self.memory = MemoryApplication(self)
         self.topic_memory = TopicMemoryApplication(self)
         self.records = RecordApplication(self)
+        self.lifecycle = SourceLifecycleApplication(self, cast("RelationalContexts", provider).database)
         self.prompts = PromptApplication(self)
         self.review = ReviewApplication(self)
         self.skill = SkillApplication(self)

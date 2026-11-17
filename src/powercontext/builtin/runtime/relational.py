@@ -128,6 +128,7 @@ from powercontext.builtin.persistence.connectors import ConnectorCheckpointRepos
 from powercontext.builtin.persistence.cursors import SourceCursorRepository
 from powercontext.builtin.persistence.database import AsyncDatabase
 from powercontext.builtin.persistence.errors import RepositoryNotFoundError, StoredPayloadConflictError
+from powercontext.builtin.persistence.source_lifecycle import SourceLifecycleRepository
 from powercontext.builtin.persistence.experience_index import ExperienceIndex, NoExperienceIndex
 from powercontext.builtin.persistence.external_skills import ExternalSkillRepository
 from powercontext.builtin.persistence.family_management import (
@@ -964,12 +965,16 @@ class RelationalContexts:
 
         scope = validate_scope_id(scope_id)
         async with self.database.transaction() as connection:
-            return await self.repositories.topic_memories.browse_current(
+            items = await self.repositories.topic_memories.browse_current(
                 connection,
                 scope,
                 limit=limit,
                 after=after,
             )
+            suppressed = await SourceLifecycleRepository().suppressed_topic_artifact_ids(connection, scope)
+            if suppressed:
+                items = tuple(item for item in items if item.artifact_ref.artifact_id not in suppressed)
+            return items
 
     async def search_topic_memories(
         self,
@@ -991,7 +996,7 @@ class RelationalContexts:
             embedding_profile = query_embedding.embedding_profile
         scope = validate_scope_id(scope_id)
         async with self.database.transaction() as connection:
-            return await self.repositories.topic_memories.search(
+            result = await self.repositories.topic_memories.search(
                 connection,
                 scope,
                 query,
@@ -1001,6 +1006,12 @@ class RelationalContexts:
                 embedding_profile=embedding_profile,
                 admission=admission,
             )
+            suppressed = await SourceLifecycleRepository().suppressed_topic_artifact_ids(connection, scope)
+            if suppressed:
+                result = result.model_copy(
+                    update={"hits": tuple(hit for hit in result.hits if hit.artifact_ref.artifact_id not in suppressed)}
+                )
+            return result
 
     async def search_skills(
         self,

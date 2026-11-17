@@ -719,6 +719,10 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
         "profile": config.runtime.profile_schedule_enabled or None,
         "skill": None,
     }
+    count_thresholds = {
+        "memory": config.runtime.memory_source_count_threshold,
+        "topic-memory": config.runtime.topic_memory_source_count_threshold,
+    }
     for family, schedule in automatic.items():
         if schedule is not None and family not in declared | registered:
             if (
@@ -787,6 +791,7 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
                 if family == "skill"
                 else SourceProcessingPendingProvider(contexts.database, binding, family),
                 automatic_scope_filter=enabled_profile_scopes if family == "profile" else None,
+                source_count_threshold=count_thresholds.get(family),
             )
         )
     _validate_processing_registrations(configured)
@@ -960,9 +965,12 @@ async def open_builtin_contexts(
                 await contexts.aclose_usage_recorder()
         return
     experience_index = OceanBaseExperienceFTSIndex()
-    indexes = [OceanBaseMemoryFTSIndex()]
+    fts_index = OceanBaseMemoryFTSIndex()
+    indexes = [fts_index]
     if embedding_model is not None:
-        indexes.append(OceanBaseMemoryVectorIndex(embedding_model.profile))
+        vector_index = OceanBaseMemoryVectorIndex(embedding_model.profile)
+        fts_index._vector_index = vector_index
+        indexes.append(vector_index)
     index = CompositeMemoryIndex(*indexes)
     topic_indexes: list[TopicMemoryIndex] = [OceanBaseTopicMemoryFTSIndex()]
     if embedding_model is not None:
