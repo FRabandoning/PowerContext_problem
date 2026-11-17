@@ -173,6 +173,7 @@ from powercontext.builtin.runtime.models import (
     TopicMemoryFlushResult,
 )
 from powercontext.builtin.runtime.protocols import PowerContextProvider, RemoteIngestion
+from powercontext.builtin.runtime.source_lifecycle import SourceLifecycleError, SourceLifecycleEvent
 from powercontext.builtin.runtime.readiness import (
     CachedReadinessProbe,
     ReadinessCheckStatus,
@@ -366,6 +367,8 @@ __all__ = [
     "SkillGenerationOrigin",
     "SourceApplication",
     "SourceInventoryStatistics",
+    "SourceLifecycleError",
+    "SourceLifecycleEvent",
     "SourceReceipt",
     "SpawnArtifactProcessingWorkerLauncher",
     "Statistics",

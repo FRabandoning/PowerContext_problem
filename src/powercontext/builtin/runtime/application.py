@@ -235,6 +235,7 @@ from powercontext.builtin.runtime.readiness import (
     RuntimeReadinessChecks,
     RuntimeReadinessStatus,
 )
+from powercontext.builtin.runtime.source_lifecycle import LifecycleApplication, SourceLifecycleStore
 from powercontext.builtin.runtime.recall_sufficiency import (
     EXPERIENCE_FAMILY,
     MEMORY_FAMILY,
@@ -2700,6 +2701,17 @@ class ScopedTopicMemoryApplication:
                         "unit": "topic-memory",
                     },
                 )
+        inactive = await self._runtime._lifecycle_store.inactive_artifact_ids(self.scope_id)
+        if inactive and result.hits:
+            result = result.model_copy(
+                update={
+                    "hits": tuple(
+                        hit
+                        for hit in result.hits
+                        if hit.artifact_ref.artifact_id not in inactive
+                    )
+                }
+            )
         return result
 
     async def _search_with_embedding(
@@ -3044,6 +3056,7 @@ class BuiltinRuntime:
         remote_ingestion: RemoteIngestion | None = None,
         dream_service: DreamService | None = None,
         generation_concurrency: int = 4,
+        lifecycle_store: SourceLifecycleStore | None = None,
     ) -> None:
         if source_window_limit < 1:
             raise _RuntimeConfigurationError("source_window_limit")
@@ -3116,6 +3129,12 @@ class BuiltinRuntime:
         self._closed = False
         self._scheduler: AsyncIOScheduler | None = None
         self._scheduler_runtime_key: str | None = None
+        self._lifecycle_store = (
+            lifecycle_store
+            if lifecycle_store is not None
+            else SourceLifecycleStore(getattr(provider, "database", None))
+        )
+        self.lifecycle = LifecycleApplication(self)
         self.sources = SourceApplication(self)
         self.ingestion = RemoteIngestionApplication(self, remote_ingestion)
         self.code = CodeApplication(self, code_service or CodeService(CodeConfig()))
