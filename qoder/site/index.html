@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StudyLoop · 会记住你的复习教练</title>
+<meta name="description" content="StudyLoop 用 PowerContext 记住学习者的薄弱点、进度和偏好，让每次复习都从上次结束的地方继续。" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="page">
+  <header class="nav">
+    <a class="brand" href="#top">
+      <span class="mark">S</span>
+      <span class="brand-name">StudyLoop</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#problem">问题</a>
+      <a href="#features">功能</a>
+      <a href="#how">技术</a>
+      <a href="#run">运行</a>
+      <a class="nav-cta" href="https://github.com/FRabandoning/PowerContext_problem/tree/2026-competition-ecosystem/qoder" target="_blank" rel="noreferrer">代码仓库</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero reveal">
+      <p class="eyebrow">OceanBase 2026 数据库大赛 · Qoder 赛道</p>
+      <h1>会记住你的<br /><span class="grad">复习教练</span></h1>
+      <p class="lede">
+        StudyLoop 把学习者的薄弱知识点、复习进度和偏好交给 PowerContext。
+        下一次打开时，它先想起你，再安排题目——不用每次从零解释自己。
+      </p>
+      <div class="hero-actions">
+        <a class="btn primary" href="#run">三步运行</a>
+        <a class="btn ghost" href="#features">看看它记住了什么</a>
+      </div>
+      <ul class="pills">
+        <li>Qoder 开发</li>
+        <li>PowerContext 记忆</li>
+        <li>FastAPI + 原生前端</li>
+        <li>本地可复现</li>
+      </ul>
+      <figure class="hero-shot">
+        <img src="assets/01-recall-and-quiz.png" alt="StudyLoop 第二轮复习：PowerContext 召回历史薄弱点并优先排题" />
+        <figcaption>第二轮复习：应用召回上一轮的薄弱点，把「树」排到最前。</figcaption>
+      </figure>
+    </section>
+
+    <section id="problem" class="section reveal">
+      <p class="section-tag">问题</p>
+      <h2>复习最贵的成本，是重新找回自己</h2>
+      <div class="grid three">
+        <article class="card">
+          <h3>错题会重复</h3>
+          <p>错过一次的知识点，隔一周再看还是陌生；错题本记录了题目，却没记录「为什么错」。</p>
+        </article>
+        <article class="card">
+          <h3>进度无法延续</h3>
+          <p>换设备、换工具、隔几天再打开，之前的复习范围与掌握情况全部丢失。</p>
+        </article>
+        <article class="card">
+          <h3>Agent 不认识你</h3>
+          <p>每次都要重新描述自己的薄弱章节和复习偏好，AI 的「个性化」只存在于单次会话。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="features" class="section reveal">
+      <p class="section-tag">核心功能</p>
+      <h2>记忆不是日志，而是下一题的排序依据</h2>
+      <div class="feature">
+        <div class="feature-copy">
+          <span class="step">01</span>
+          <h3>从记忆里召回</h3>
+          <p>每次开始复习，应用按学习者读取 PowerContext 中的薄弱点、进度和偏好，并在界面上展示命中的 Entry ID 与检索方式。</p>
+        </div>
+        <figure class="shot"><img src="assets/01-recall-and-quiz.png" alt="召回面板与优先排题" loading="lazy" /></figure>
+      </div>
+      <div class="feature reverse">
+        <div class="feature-copy">
+          <span class="step">02</span>
+          <h3>把错题写成薄弱点</h3>
+          <p>答错后按主题写入 <code>weakness</code> 记忆，同一道题不会重复记录；每轮结束追加一条 <code>progress</code>，记录正确数与待加强主题。</p>
+        </div>
+        <figure class="shot"><img src="assets/02-result.png" alt="结果页与写入 PowerContext 的记忆条目" loading="lazy" /></figure>
+      </div>
+      <div class="feature">
+        <div class="feature-copy">
+          <span class="step">03</span>
+          <h3>学习档案可核对</h3>
+          <p>记忆库列出当前学习者的全部条目。关闭 PowerContext 后记忆不可见——证明这些状态确实来自它，而不是应用本地缓存。</p>
+        </div>
+        <figure class="shot"><img src="assets/03-memory-library.png" alt="记忆库中的薄弱点、进度与偏好" loading="lazy" /></figure>
+      </div>
+    </section>
+
+    <section id="how" class="section reveal">
+      <p class="section-tag">技术</p>
+      <h2>一轮复习，两次记忆交互</h2>
+      <div class="flow">
+        <div class="flow-step">
+          <span class="flow-label">复习前</span>
+          <strong>召回</strong>
+          <p>读取 Scope 内记忆，统计薄弱主题，按「难度 + 2 × 薄弱次数」排序出题。</p>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <span class="flow-label">答题</span>
+          <strong>判分</strong>
+          <p>应用内完成评分与解析，题目与答案不写入记忆。</p>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-step">
+          <span class="flow-label">复习后</span>
+          <strong>写入</strong>
+          <p>错题写入 weakness，整轮写入 progress；勾选「只复习薄弱点」时写入 preference。</p>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <div class="flow-step accent">
+          <span class="flow-label">下次</span>
+          <strong>复用</strong>
+          <p>新一轮召回这些条目，薄弱主题优先出现，偏好自动恢复。</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>能力</th><th>实现</th><th>PowerContext API</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>学习者隔离</td><td>每个学习者一个 Scope</td><td><code>GET/POST /v1/scopes</code></td></tr>
+            <tr><td>记忆写入</td><td>weakness / progress / preference</td><td><code>POST /v1/memory/remember</code></td></tr>
+            <tr><td>记忆召回</td><td>按查询检索并展示命中方式</td><td><code>POST /v1/memory/search</code></td></tr>
+            <tr><td>记忆库</td><td>列出全部条目与 Entry ID</td><td><code>POST /v1/memory/entries/list</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">未配置模型的本地 PowerContext 使用全文检索完成召回（响应 <code>mode: "fts"</code>）；接入生成模型与向量检索后，应用代码无需修改。</p>
+    </section>
+
+    <section id="run" class="section reveal">
+      <p class="section-tag">运行</p>
+      <h2>三步在本地跑通</h2>
+      <div class="grid two">
+        <div class="code-card">
+          <div class="code-head"><span>终端 1 · PowerContext</span></div>
+          <pre><code>uv tool install --force "powercontext[cli,server]==1.2.0"
+powercontext server run</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span>终端 2 · StudyLoop</span></div>
+          <pre><code>cd qoder
+uv venv .venv
+uv pip install -r requirements.txt --python .venv/Scripts/python.exe
+.venv/Scripts/python.exe app.py</code></pre>
+        </div>
+      </div>
+      <p class="note">打开 <code>http://127.0.0.1:7860</code>。macOS / Linux 将 <code>.venv/Scripts/python.exe</code> 换成 <code>.venv/bin/python</code>。</p>
+      <div class="verify">
+        <h3>验证样例</h3>
+        <p>运行 <code>scripts/verify_demo.py</code>，脚本用两轮复习检查记忆是否跨会话复用。全部通过时输出：</p>
+        <pre><code>验证通过：PowerContext 中的记忆确实被后续会话复用。</code></pre>
+      </div>
+    </section>
+
+    <section class="section reveal">
+      <p class="section-tag">Qoder 开发记录</p>
+      <h2>从需求拆解到站点发布，都在 Qoder 里完成</h2>
+      <div class="grid three">
+        <article class="card">
+          <h3>需求与接口核对</h3>
+          <p>读取赛题与 PowerContext OpenAPI，确认 Scope、Memory 写入、FTS 召回接口，先做 curl 冒烟测试再编码。</p>
+        </article>
+        <article class="card">
+          <h3>实现与联调</h3>
+          <p>生成客户端、排题逻辑、FastAPI 路由与前端；联调中定位并修复 Windows 下 <code>NO_PROXY</code> 导致的 httpx 初始化失败。</p>
+        </article>
+        <article class="card">
+          <h3>验证与发布</h3>
+          <p>浏览器实测两轮复习与记忆库，运行端到端验证脚本，整理开发记录并用 Qoder Sites 发布本页。</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      <strong>StudyLoop</strong>
+      <span> · Qoder × OceanBase 2026 数据库大赛</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/FRabandoning/PowerContext_problem/tree/2026-competition-ecosystem/qoder" target="_blank" rel="noreferrer">代码仓库</a>
+      <a href="https://github.com/oceanbase/powercontext" target="_blank" rel="noreferrer">PowerContext</a>
+    </div>
+  </footer>
+</div>
+<script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+{
+  "questions": [
+    {
+      "id": "ds-01",
+      "topic": "线性表",
+      "difficulty": 1,
+      "question": "长度为 n 的顺序表，等概率地在任意合法位置插入一个元素，平均需要移动多少个元素？",
+      "options": ["n/2", "n", "(n+1)/2", "n-1"],
+      "answer": 0,
+      "explanation": "共有 n+1 个可插入位置，第 i 个位置需移动 n-i+1 个元素，平均为 n/2。"
+    },
+    {
+      "id": "ds-02",
+      "topic": "线性表",
+      "difficulty": 2,
+      "question": "已知单链表的头指针，要删除第 i 个结点，平均时间复杂度是？",
+      "options": ["O(1)", "O(n)", "O(log n)", "O(n^2)"],
+      "answer": 1,
+      "explanation": "单链表需从头结点出发找到第 i-1 个结点（前驱），平均遍历约 n/2 个结点，因此是 O(n)。"
+    },
+    {
+      "id": "ds-03",
+      "topic": "栈与队列",
+      "difficulty": 2,
+      "question": "1、2、3、4 依次入栈，中途可随时出栈，可能的输出序列共有多少种？",
+      "options": ["8 种", "14 种", "24 种", "16 种"],
+      "answer": 1,
+      "explanation": "合法出栈序列数为第 n 个卡特兰数 C4 = 14。"
+    },
+    {
+      "id": "ds-04",
+      "topic": "栈与队列",
+      "difficulty": 1,
+      "question": "容量为 m 的循环队列采用「牺牲一个单元」区分队空与队满，最多可存放多少个元素？",
+      "options": ["m", "m-1", "m+1", "m/2"],
+      "answer": 1,
+      "explanation": "(rear+1)%m == front 判满，队列中最多保存 m-1 个元素。"
+    },
+    {
+      "id": "ds-05",
+      "topic": "树",
+      "difficulty": 2,
+      "question": "一棵有 1000 个结点的完全二叉树，高度（层数）是多少？",
+      "options": ["9", "10", "11", "12"],
+      "answer": 1,
+      "explanation": "完全二叉树高度为 ⌊log2 n⌋+1 = ⌊9.97⌋+1 = 10。"
+    },
+    {
+      "id": "ds-06",
+      "topic": "树",
+      "difficulty": 1,
+      "question": "二叉树第 i 层最多有多少个结点（根为第 1 层）？",
+      "options": ["2^i", "2^(i-1)", "2i", "i^2"],
+      "answer": 1,
+      "explanation": "第 1 层 1 个，第 2 层 2 个，第 i 层最多 2^(i-1) 个结点。"
+    },
+    {
+      "id": "ds-07",
+      "topic": "树",
+      "difficulty": 2,
+      "question": "下列哪组遍历序列可以唯一确定一棵二叉树？",
+      "options": ["先序 + 后序", "先序 + 中序", "层序 + 后序", "只有先序"],
+      "answer": 1,
+      "explanation": "先序（或后序）确定根，中序划分左右子树，二者配合可唯一还原二叉树。"
+    },
+    {
+      "id": "ds-08",
+      "topic": "图",
+      "difficulty": 1,
+      "question": "含 n 个顶点的无向连通图，至少有（ ）条边？",
+      "options": ["n", "n-1", "n+1", "n(n-1)/2"],
+      "answer": 1,
+      "explanation": "连通 n 个顶点至少需要 n-1 条边，此时为一棵树。"
+    },
+    {
+      "id": "ds-09",
+      "topic": "图",
+      "difficulty": 2,
+      "question": "存储稠密图更适合使用哪种结构？",
+      "options": ["邻接矩阵", "邻接表", "十字链表", "边集数组"],
+      "answer": 0,
+      "explanation": "稠密图边数接近 n(n-1)/2，邻接矩阵空间固定为 O(n^2)，且判断相邻只需 O(1)。"
+    },
+    {
+      "id": "ds-10",
+      "topic": "排序",
+      "difficulty": 2,
+      "question": "快速排序的最坏时间复杂度是？",
+      "options": ["O(n log n)", "O(n^2)", "O(n)", "O(log n)"],
+      "answer": 1,
+      "explanation": "每次划分极不平衡（如已有序且取端点为主元）时退化为 O(n^2)。"
+    },
+    {
+      "id": "ds-11",
+      "topic": "排序",
+      "difficulty": 2,
+      "question": "下列排序算法中，属于稳定排序的是？",
+      "options": ["快速排序", "堆排序", "归并排序", "选择排序"],
+      "answer": 2,
+      "explanation": "归并排序在合并时保持相等元素的相对次序，是稳定排序。"
+    },
+    {
+      "id": "ds-12",
+      "topic": "哈希",
+      "difficulty": 2,
+      "question": "采用拉链法处理冲突时，装填因子增大最直接的影响是？",
+      "options": ["平均查找长度增大", "哈希函数失效", "不再发生冲突", "空间复杂度降为 O(1)"],
+      "answer": 0,
+      "explanation": "装填因子越大，链越长，平均查找长度随之增大。"
+    },
+    {
+      "id": "ds-13",
+      "topic": "查找",
+      "difficulty": 1,
+      "question": "对有序顺序表进行二分查找的时间复杂度是？",
+      "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      "answer": 1,
+      "explanation": "每次比较排除一半候选区间，最多比较 ⌈log2(n+1)⌉ 次。"
+    },
+    {
+      "id": "ds-14",
+      "topic": "查找",
+      "difficulty": 2,
+      "question": "朴素递归计算斐波那契数列第 n 项的时间复杂度是？",
+      "options": ["O(n)", "O(n log n)", "O(2^n)", "O(n^2)"],
+      "answer": 2,
+      "explanation": "每层调用产生两个子调用，递归树结点数约为 O(2^n)。"
+    }
+  ]
+}

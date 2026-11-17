@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StudyLoop · 会记住你的复习教练</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="bg"></div>
+  <main>
+    <header>
+      <div class="brand">
+        <span class="logo">S</span>
+        <div>
+          <h1>StudyLoop</h1>
+          <p>会记住你的复习教练</p>
+        </div>
+      </div>
+      <span id="pcBadge" class="badge pending">检测 PowerContext…</span>
+    </header>
+
+    <section class="card setup">
+      <div class="setup-row">
+        <label class="field">
+          <span>学习者</span>
+          <input id="learner" value="张同学" maxlength="24" autocomplete="off" />
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="weakOnly" />
+          <span class="track"><span class="thumb"></span></span>
+          <span class="switch-label">只复习薄弱点</span>
+        </label>
+        <button id="startBtn" class="primary">开始复习</button>
+      </div>
+      <p class="hint" id="setupHint">记忆按学习者分别保存，换一个名字就是一份全新的学习档案。</p>
+    </section>
+
+    <section id="recallPanel" class="card recall hidden">
+      <div class="section-head">
+        <h2>PowerContext 从往常记忆里召回</h2>
+        <span class="muted" id="scopeLabel"></span>
+      </div>
+      <div id="recallList" class="chips"></div>
+      <p class="hint" id="weakHint"></p>
+    </section>
+
+    <section id="quizPanel" class="hidden">
+      <div class="section-head quiz-head">
+        <h2>今日复习</h2>
+        <span class="muted" id="quizCount"></span>
+      </div>
+      <form id="quizForm"></form>
+      <div class="actions">
+        <button id="submitBtn" class="primary" type="button">提交答案</button>
+        <button id="againBtn" class="ghost hidden" type="button">再来一轮</button>
+      </div>
+    </section>
+
+    <section id="resultPanel" class="card result hidden">
+      <div class="score-row">
+        <div class="score-ring"><span id="scoreText">0/0</span></div>
+        <div>
+          <h2>本轮完成</h2>
+          <p class="muted" id="resultSummary"></p>
+        </div>
+      </div>
+      <div id="resultDetails" class="details"></div>
+      <div class="writes">
+        <h3>已写入 PowerContext</h3>
+        <div id="writeList" class="chips"></div>
+      </div>
+      <p class="hint">下一轮开始时会再次召回这些记忆，薄弱知识点会被优先安排。</p>
+    </section>
+
+    <section class="card memory">
+      <div class="section-head">
+        <h2>记忆库</h2>
+        <button id="memoryBtn" class="ghost" type="button">查看全部记忆</button>
+      </div>
+      <div id="memoryList" class="mem-list hidden"></div>
+    </section>
+
+    <footer>
+      <span>记忆由本地 PowerContext Server 持久化 · 项目使用 Qoder 开发</span>
+    </footer>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
