@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from itertools import chain
@@ -106,6 +107,7 @@ class PreparedContextBuild:
     origins: tuple[PreparedContextOrigin, ...]
     omissions: PreparedContextOmissions = PreparedContextOmissions()
     code_origins: tuple[CodeEvidenceRef, ...] = ()
+    fragments: tuple["EvidenceFragment", ...] = ()
 
 
 @dataclass(frozen=True)
@@ -115,6 +117,20 @@ class MemoryEntryAddress:
     memory: ArtifactAddress
     entry_id: str
     entry_version_id: str
+
+
+@dataclass(frozen=True)
+class EvidenceFragment:
+    """One literal slice of a Memory entry selected to answer the current query.
+
+    ``start``/``end`` are Python string offsets into ``address`` entry's full text, so
+    ``text == full_text[start:end]`` holds exactly (no re-encoding, no lossy truncation).
+    """
+
+    address: MemoryEntryAddress
+    start: int
+    end: int
+    text: str
 
 
 PreparedContextOrigin = MemoryCitation | ArtifactRef | MemoryEntryAddress | ArtifactAddress
@@ -234,6 +250,13 @@ class PreparedContextBuilder:
             raise PreparedContextInvariantError("topic-memory-candidate-limit")
         if sum(len(candidates.hits) for candidates in experience_candidates) > self.experience_candidate_limit:
             raise PreparedContextInvariantError("experience-candidate-limit")
+
+        if request.evidence_selection:
+            return self._build_evidence_result(
+                request=request,
+                current_scope_id=current_scope_id,
+                memory_candidates=memory_candidates,
+            )
 
         content, origins, omissions = self._select_entries(
             request=request,
@@ -432,6 +455,117 @@ class PreparedContextBuilder:
             return None, (), omissions
         content = render_context_text(included, assembly)
         return content, tuple(origins), omissions
+
+    def _build_evidence_result(
+        self,
+        *,
+        request: PrepareContextRequest,
+        current_scope_id: str | None,
+        memory_candidates: Sequence[PreparedMemoryCandidates],
+    ) -> PreparedContextBuild:
+        """Select literal, query-driven slices from each candidate Memory hit's full text.
+
+        Unlike the default path, the delivered content is a set of *slices* of the original
+        entries rather than whole (possibly truncated) entries. Every slice stays byte-exact
+        with respect to the source text and the rendered envelope is bounded by ``max_bytes``.
+        """
+
+        terms = _query_terms(request.query)
+        items: list[dict[str, object]] = []
+        origins: list[PreparedContextOrigin] = []
+        fragments: list[EvidenceFragment] = []
+        for group in memory_candidates:
+            for hit in group.hits:
+                if not hit.text.strip():
+                    continue
+                span = _best_query_span(hit.text, terms)
+                if span is None:
+                    continue
+                scope_id = group.scope_id or ""
+                memory = ArtifactAddress(scope_id=scope_id, artifact=hit.memory_ref)
+                address = MemoryEntryAddress(
+                    memory=memory,
+                    entry_id=hit.entry_id,
+                    entry_version_id=hit.entry_version_id,
+                )
+                # Match the default path's origin choice: a cross-scope candidate carries a
+                # scoped address, a same-scope candidate carries a plain MemoryCitation.
+                cross_scope = bool(group.scope_id) and group.scope_id != current_scope_id
+                origin: PreparedContextOrigin = address if cross_scope else MemoryCitation(
+                    memory_ref=hit.memory_ref,
+                    entry_id=hit.entry_id,
+                    entry_version_id=hit.entry_version_id,
+                )
+                citation = {
+                    "scope_id": scope_id,
+                    "memory_ref": hit.memory_ref.model_dump(mode="json"),
+                    "entry_id": hit.entry_id,
+                    "entry_version_id": hit.entry_version_id,
+                }
+                fitted = self._fit_evidence_window(hit.text, span, citation, items, request.max_bytes)
+                if fitted is None:
+                    continue
+                start, end = fitted
+                text = hit.text[start:end]
+                fragments.append(EvidenceFragment(address=address, start=start, end=end, text=text))
+                origins.append(origin)
+                items.append({"citation": citation, "content": text, "start": start, "end": end})
+
+        if not items:
+            return PreparedContextBuild(context=self.empty(), origins=(), fragments=())
+        content = _render_evidence(items)
+        content_bytes = len(content.encode("utf-8"))
+        return PreparedContextBuild(
+            context=PreparedContext(status="ready", content=content, content_bytes=content_bytes),
+            origins=tuple(origins),
+            fragments=tuple(fragments),
+        )
+
+    def _fit_evidence_window(
+        self,
+        text: str,
+        span: tuple[int, int],
+        citation: dict[str, object],
+        included: Sequence[dict[str, object]],
+        max_bytes: int,
+    ) -> tuple[int, int] | None:
+        """Return the largest fitting ``(start, end)`` around a query span.
+
+        Context is expanded to sentence boundaries first, then reduced (right context,
+        left context, finally the matched core itself) until the whole envelope fits the
+        byte budget. All offsets are Python string offsets, so no UTF-8 character is split.
+        """
+
+        core_start, core_end = span
+
+        def fits(start: int, end: int) -> bool:
+            if start >= end:
+                return False
+            item = {"citation": citation, "content": text[start:end], "start": start, "end": end}
+            return len(_render_evidence((*included, item)).encode("utf-8")) <= max_bytes
+
+        start, end = _expand_evidence_span(text, core_start, core_end)
+        for candidate in (
+            (start, end),
+            (core_start, end),
+            (start, core_end),
+            (core_start, core_end),
+        ):
+            if fits(*candidate):
+                return candidate
+
+        # The matched core alone exceeded the budget: shrink it from the right by binary
+        # search, always keeping a non-empty literal slice.
+        low, high = core_start + 1, core_end
+        best: int | None = None
+        while low <= high:
+            middle = (low + high) // 2
+            if fits(core_start, middle):
+                best = middle
+                low = middle + 1
+            else:
+                high = middle - 1
+        return (core_start, best) if best is not None else None
 
     def _profile_entries(self, candidates: Sequence[PreparedProfileCandidate]) -> tuple[_PreparedContextEntry, ...]:
         entries = []
@@ -728,3 +862,78 @@ def _truncate_utf8(text: str, byte_budget: int) -> str:
     prefix_budget = byte_budget - len(_ELLIPSIS.encode("utf-8"))
     encoded_prefix = text.encode("utf-8")[:prefix_budget]
     return f"{encoded_prefix.decode('utf-8', errors='ignore')}{_ELLIPSIS}"
+
+
+_SENTENCE_BOUNDARY = ".!?。！？\n"
+_WORD_RE = re.compile(r"\w+")
+
+
+def _query_terms(query: str) -> tuple[str, ...]:
+    """Lower-cased word terms; ``\\w`` keeps CJK runs intact for Unicode queries."""
+
+    return tuple(term for term in _WORD_RE.findall(query.lower()) if term)
+
+
+def _best_query_span(text: str, terms: tuple[str, ...]) -> tuple[int, int] | None:
+    """Return the most compact literal span covering the most distinct query terms.
+
+    Distinct-term count dominates compactness so a late cluster that answers the query wins
+    over a long, term-free prefix. Occurrences are found on the exact ``text`` (case-folded
+    for matching only); the returned offsets always address the original string.
+    """
+
+    if not terms:
+        return None
+    lowered = text.lower()
+    occurrences: list[tuple[int, int, int]] = []
+    for term_index, term in enumerate(terms):
+        start = 0
+        while True:
+            position = lowered.find(term, start)
+            if position < 0:
+                break
+            occurrences.append((position, position + len(term), term_index))
+            start = position + 1
+    if not occurrences:
+        return None
+    occurrences.sort()
+
+    counts: dict[int, int] = {}
+    left = 0
+    best: tuple[tuple[int, int], int, int] | None = None
+    for right, (_, end, term_index) in enumerate(occurrences):
+        counts[term_index] = counts.get(term_index, 0) + 1
+        while left <= right and counts[occurrences[left][2]] > 1:
+            counts[occurrences[left][2]] -= 1
+            left += 1
+        start = occurrences[left][0]
+        score = (len(counts), -(end - start))
+        if best is None or score > best[0]:
+            best = (score, start, end)
+    if best is None:
+        return None
+    return best[1], best[2]
+
+
+def _expand_evidence_span(text: str, start: int, end: int) -> tuple[int, int]:
+    """Grow a matched core to whole sentence boundaries without ever leaving the text."""
+
+    left = start
+    while left > 0 and text[left - 1] not in _SENTENCE_BOUNDARY:
+        left -= 1
+    while left < start and text[left] in " \t":
+        left += 1
+    right = end
+    while right < len(text) and text[right] not in _SENTENCE_BOUNDARY:
+        right += 1
+    if right < len(text):
+        right += 1
+    return left, right
+
+
+def _render_evidence(items: Sequence[dict[str, object]]) -> str:
+    """Render evidence slices in the same bounded envelope as the default context."""
+
+    envelope = {"trust": "untrusted_history", "items": list(items)}
+    encoded = json.dumps(envelope, ensure_ascii=False, separators=(",", ":"))
+    return "\n\n".join((TRUST_POLICY, f"{_BEGIN_MARKER}\n{encoded}\n{_END_MARKER}"))
