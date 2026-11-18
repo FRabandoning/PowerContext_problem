@@ -1,0 +1,933 @@
+app:
+  description: "谜海拾贝 —— 一个会出谜语、陪你猜谜、还能讲冷知识的好玩智能助手。基于 Dify + OceanBase seekdb（向量+全文混合检索）实现。"
+  icon: 🧩
+  icon_background: "#FFEAD5"
+  mode: advanced-chat
+  name: 谜海拾贝
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.2
+workflow:
+  conversation_variables:
+    - description: 当前谜语的完整上下文（含谜面与谜底），用于后续校验用户答案
+      id: "cv_riddle_context"
+      name: riddle_context
+      selector:
+        - conversation
+        - riddle_context
+      value: ""
+      value_type: string
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions: []
+      allowed_file_types: []
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+    opening_statement: "你好呀，我是「谜海拾贝」🎣 一个既会出谜语、又能陪你猜谜，还满肚子冷知识的小助手。\n\n你可以试试：\n- “给我出一个关于动物的谜语”\n- “来个简单的谜语”\n- “讲一个冷知识”\n- “为什么天空是蓝色的？”\n\n出完谜语后，直接告诉我你的答案，我会告诉你对不对，猜不出还能找我要提示哦～"
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+      - 给我出一个关于动物的谜语
+      - 讲一个有趣的冷知识
+      - 为什么天空是蓝色的？
+    suggested_questions_after_answer:
+      enabled: true
+    text_to_speech:
+      enabled: false
+      language: ""
+      voice: ""
+  graph:
+    edges:
+      - data:
+          isInIteration: false
+          sourceType: start
+          targetType: question-classifier
+        id: start-classifier
+        source: start
+        sourceHandle: source
+        target: classifier
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: question-classifier
+          targetType: http-request
+        id: classifier-1-fetch_riddle
+        source: classifier
+        sourceHandle: "1"
+        target: fetch_riddle
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: question-classifier
+          targetType: llm
+        id: classifier-2-check_answer
+        source: classifier
+        sourceHandle: "2"
+        target: check_answer
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: question-classifier
+          targetType: llm
+        id: classifier-3-give_hint
+        source: classifier
+        sourceHandle: "3"
+        target: give_hint
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: question-classifier
+          targetType: http-request
+        id: classifier-4-fetch_fact
+        source: classifier
+        sourceHandle: "4"
+        target: fetch_fact
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: question-classifier
+          targetType: llm
+        id: classifier-5-chat
+        source: classifier
+        sourceHandle: "5"
+        target: chat
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: http-request
+          targetType: variable-assigner
+        id: fetch_riddle-save_riddle
+        source: fetch_riddle
+        sourceHandle: source
+        target: save_riddle
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: variable-assigner
+          targetType: llm
+        id: save_riddle-present_riddle
+        source: save_riddle
+        sourceHandle: source
+        target: present_riddle
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: present_riddle-strip_riddle
+        source: present_riddle
+        sourceHandle: source
+        target: strip_riddle
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: check_answer-strip_check
+        source: check_answer
+        sourceHandle: source
+        target: strip_check
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: give_hint-strip_hint
+        source: give_hint
+        sourceHandle: source
+        target: strip_hint
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: http-request
+          targetType: llm
+        id: fetch_fact-answer_fact
+        source: fetch_fact
+        sourceHandle: source
+        target: answer_fact
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: answer_fact-strip_fact
+        source: answer_fact
+        sourceHandle: source
+        target: strip_fact
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: llm
+          targetType: code
+        id: chat-strip_chat
+        source: chat
+        sourceHandle: source
+        target: strip_chat
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: answer
+        id: strip_riddle-ans_riddle
+        source: strip_riddle
+        sourceHandle: source
+        target: ans_riddle
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: answer
+        id: strip_check-ans_check
+        source: strip_check
+        sourceHandle: source
+        target: ans_check
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: answer
+        id: strip_hint-ans_hint
+        source: strip_hint
+        sourceHandle: source
+        target: ans_hint
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: answer
+        id: strip_fact-ans_fact
+        source: strip_fact
+        sourceHandle: source
+        target: ans_fact
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data:
+          isInIteration: false
+          sourceType: code
+          targetType: answer
+        id: strip_chat-ans_chat
+        source: strip_chat
+        sourceHandle: source
+        target: ans_chat
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: ""
+          selected: false
+          title: 开始
+          type: start
+          variables:
+            - label: 用户提问
+              max_length: 256
+              options: []
+              required: true
+              type: paragraph
+              variable: query
+        height: 116
+        id: start
+        position:
+          x: 80
+          y: 300
+        positionAbsolute:
+          x: 80
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          classes:
+            - id: "1"
+              name: 出谜语
+            - id: "2"
+              name: 猜答案
+            - id: "3"
+              name: 要提示
+            - id: "4"
+              name: 冷知识
+            - id: "5"
+              name: 闲聊
+          desc: ""
+          instruction: "请判断用户意图：\n1. 出谜语：用户想让你出一道谜语（如“出个谜语”“来个动物谜语”）。\n2. 猜答案：用户给出了一个猜测/答案（如“是西瓜吗”“答案是月亮”）。\n3. 要提示：用户猜不出，想要提示。\n4. 冷知识：用户想听冷知识或问为什么/是什么等科普问题。\n5. 闲聊：其他内容（打招呼、询问功能等）。"
+          model:
+            completion_params:
+              think: false
+            mode: chat
+            name: deepseek-r1:8b
+            provider: ollama
+          query_variable_selector:
+            - start
+            - query
+          selected: false
+          title: 意图分类
+          topics: []
+          type: question-classifier
+        height: 200
+        id: classifier
+        position:
+          x: 400
+          y: 300
+        positionAbsolute:
+          x: 400
+          y: 300
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: no-auth
+          body:
+            type: json
+            data:
+              - key: ""
+                type: text
+                value: '{"query": "{{#start.query#}}", "category": "riddle", "n": 3}'
+          desc: "调用 seekdb 桥接服务，检索相关谜语（向量+全文混合）"
+          headers: "Content-Type: application/json"
+          method: post
+          params: ""
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 100
+          selected: false
+          timeout:
+            max_connect_timeout: 0
+            max_read_timeout: 0
+            max_write_timeout: 0
+          title: 检索谜语
+          type: http-request
+          url: http://host.docker.internal:3001/api/retrieve
+        height: 120
+        id: fetch_riddle
+        position:
+          x: 700
+          y: 120
+        positionAbsolute:
+          x: 700
+          y: 120
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: "把检索结果（含谜底）保存到会话变量，供猜答案/要提示时使用"
+          items:
+            - input_type: variable
+              operation: over-write
+              value:
+                - fetch_riddle
+                - body
+              variable_selector:
+                - conversation
+                - riddle_context
+          selected: false
+          title: 保存谜语上下文
+          type: assigner
+          version: "2"
+        height: 120
+        id: save_riddle
+        position:
+          x: 1000
+          y: 120
+        positionAbsolute:
+          x: 1000
+          y: 120
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: ""
+          memory:
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 10
+            query_prompt_template: "{{#sys.query#}}"
+          model:
+            completion_params:
+              think: false
+            mode: chat
+            name: deepseek-r1:8b
+            provider: ollama
+          prompt_template:
+            - id: pr-sys
+              role: system
+              text: "你是「谜海拾贝」，一个幽默风趣的谜语主持人。下面 JSON 是 seekdb 混合检索返回的候选谜语（results 数组里每条有 document 谜面、metadata.answer 谜底、metadata.category 分类、metadata.difficulty 难度）。\n\n请从中挑选最合适的一条，向用户出题：\n1. 只输出谜面（document），并带上分类/难度标签；\n2. 绝对不要透露谜底（metadata.answer）；\n3. 语气活泼，鼓励用户猜，并提示“猜不出可以说‘要提示’”。"
+            - id: pr-usr
+              role: user
+              text: "用户请求：{{#start.query#}}\n\n检索结果：{{#fetch_riddle.body#}}"
+          selected: false
+          title: 出谜题
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 120
+        id: present_riddle
+        position:
+          x: 1300
+          y: 120
+        positionAbsolute:
+          x: 1300
+          y: 120
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import re
+            def main(text: str) -> dict:
+                cleaned = re.sub(r'<\s*think\s*>.*?<\s*/\s*think\s*>', '', text or '', flags=re.DOTALL).strip()
+                return {"result": cleaned}
+          code_language: python3
+          desc: 去除模型思考内容，仅保留最终回答
+          outputs:
+            result:
+              children: null
+              type: string
+          selected: false
+          title: 去除思考
+          type: code
+          variables:
+            - value_selector:
+                - present_riddle
+                - text
+              variable: text
+        height: 54
+        id: strip_riddle
+        position:
+          x: 1450
+          y: 120
+        positionAbsolute:
+          x: 1450
+          y: 120
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import re
+            def main(text: str) -> dict:
+                cleaned = re.sub(r'<\s*think\s*>.*?<\s*/\s*think\s*>', '', text or '', flags=re.DOTALL).strip()
+                return {"result": cleaned}
+          code_language: python3
+          desc: 去除模型思考内容，仅保留最终回答
+          outputs:
+            result:
+              children: null
+              type: string
+          selected: false
+          title: 去除思考
+          type: code
+          variables:
+            - value_selector:
+                - check_answer
+                - text
+              variable: text
+        height: 54
+        id: strip_check
+        position:
+          x: 850
+          y: 420
+        positionAbsolute:
+          x: 850
+          y: 420
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import re
+            def main(text: str) -> dict:
+                cleaned = re.sub(r'<\s*think\s*>.*?<\s*/\s*think\s*>', '', text or '', flags=re.DOTALL).strip()
+                return {"result": cleaned}
+          code_language: python3
+          desc: 去除模型思考内容，仅保留最终回答
+          outputs:
+            result:
+              children: null
+              type: string
+          selected: false
+          title: 去除思考
+          type: code
+          variables:
+            - value_selector:
+                - give_hint
+                - text
+              variable: text
+        height: 54
+        id: strip_hint
+        position:
+          x: 850
+          y: 620
+        positionAbsolute:
+          x: 850
+          y: 620
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import re
+            def main(text: str) -> dict:
+                cleaned = re.sub(r'<\s*think\s*>.*?<\s*/\s*think\s*>', '', text or '', flags=re.DOTALL).strip()
+                return {"result": cleaned}
+          code_language: python3
+          desc: 去除模型思考内容，仅保留最终回答
+          outputs:
+            result:
+              children: null
+              type: string
+          selected: false
+          title: 去除思考
+          type: code
+          variables:
+            - value_selector:
+                - answer_fact
+                - text
+              variable: text
+        height: 54
+        id: strip_fact
+        position:
+          x: 1150
+          y: 820
+        positionAbsolute:
+          x: 1150
+          y: 820
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import re
+            def main(text: str) -> dict:
+                cleaned = re.sub(r'<\s*think\s*>.*?<\s*/\s*think\s*>', '', text or '', flags=re.DOTALL).strip()
+                return {"result": cleaned}
+          code_language: python3
+          desc: 去除模型思考内容，仅保留最终回答
+          outputs:
+            result:
+              children: null
+              type: string
+          selected: false
+          title: 去除思考
+          type: code
+          variables:
+            - value_selector:
+                - chat
+                - text
+              variable: text
+        height: 54
+        id: strip_chat
+        position:
+          x: 850
+          y: 1000
+        positionAbsolute:
+          x: 850
+          y: 1000
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: "{{#strip_riddle.result#}}"
+          desc: ""
+          selected: false
+          title: 回复谜面
+          type: answer
+          variables: []
+        height: 120
+        id: ans_riddle
+        position:
+          x: 1600
+          y: 120
+        positionAbsolute:
+          x: 1600
+          y: 120
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: ""
+          memory:
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 10
+            query_prompt_template: "{{#sys.query#}}"
+          model:
+            completion_params:
+              think: false
+            mode: chat
+            name: deepseek-r1:8b
+            provider: ollama
+          prompt_template:
+            - id: ca-sys
+              role: system
+              text: "你是「谜海拾贝」的谜语裁判。下面是之前出题时保存的谜语上下文（JSON，含 metadata.answer 谜底）。\n\n请判断用户的答案是否正确：\n1. 做宽松匹配：同义词、近义、俗称都算对（如“月亮”=“月球”）；\n2. 答对：热烈恭喜，并简单解释一下谜底；\n3. 答错：鼓励再试，但不直接透露答案；\n4. 若没有谜语上下文（用户还没出过谜），就引导他先让你出个谜语。"
+            - id: ca-usr
+              role: user
+              text: "用户答案：{{#start.query#}}\n\n谜语上下文：{{#conversation.riddle_context#}}"
+          selected: false
+          title: 校验答案
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 120
+        id: check_answer
+        position:
+          x: 700
+          y: 420
+        positionAbsolute:
+          x: 700
+          y: 420
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: "{{#strip_check.result#}}"
+          desc: ""
+          selected: false
+          title: 回复结果
+          type: answer
+          variables: []
+        height: 120
+        id: ans_check
+        position:
+          x: 1000
+          y: 420
+        positionAbsolute:
+          x: 1000
+          y: 420
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: ""
+          memory:
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 10
+            query_prompt_template: "{{#sys.query#}}"
+          model:
+            completion_params:
+              think: false
+            mode: chat
+            name: deepseek-r1:8b
+            provider: ollama
+          prompt_template:
+            - id: gh-sys
+              role: system
+              text: "你是「谜海拾贝」的谜语主持人。下面是当前谜语的上下文（JSON，含 metadata.answer 谜底）。\n\n请给用户一个渐进式提示：\n1. 先提示分类/类型（如“这是一种动物”）；\n2. 再给更具体的线索（外形、习性等）；\n3. 始终不要直接说出谜底；\n4. 语气俏皮，鼓励用户继续猜。\n\n若没有谜语上下文，先引导用户让你出个谜语。"
+            - id: gh-usr
+              role: user
+              text: "用户说：{{#start.query#}}\n\n谜语上下文：{{#conversation.riddle_context#}}"
+          selected: false
+          title: 给提示
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 120
+        id: give_hint
+        position:
+          x: 700
+          y: 620
+        positionAbsolute:
+          x: 700
+          y: 620
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: "{{#strip_hint.result#}}"
+          desc: ""
+          selected: false
+          title: 回复提示
+          type: answer
+          variables: []
+        height: 120
+        id: ans_hint
+        position:
+          x: 1000
+          y: 620
+        positionAbsolute:
+          x: 1000
+          y: 620
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization:
+            type: no-auth
+          body:
+            type: json
+            data:
+              - key: ""
+                type: text
+                value: '{"query": "{{#start.query#}}", "category": "fact", "n": 5}'
+          desc: "调用 seekdb 桥接服务，检索相关冷知识"
+          headers: "Content-Type: application/json"
+          method: post
+          params: ""
+          retry_config:
+            max_retries: 3
+            retry_enabled: true
+            retry_interval: 100
+          selected: false
+          timeout:
+            max_connect_timeout: 0
+            max_read_timeout: 0
+            max_write_timeout: 0
+          title: 检索冷知识
+          type: http-request
+          url: http://host.docker.internal:3001/api/retrieve
+        height: 120
+        id: fetch_fact
+        position:
+          x: 700
+          y: 820
+        positionAbsolute:
+          x: 700
+          y: 820
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: ""
+          memory:
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 10
+            query_prompt_template: "{{#sys.query#}}"
+          model:
+            completion_params:
+              think: false
+            mode: chat
+            name: deepseek-r1:8b
+            provider: ollama
+          prompt_template:
+            - id: af-sys
+              role: system
+              text: "你是「谜海拾贝」，一个博学又幽默的冷知识达人。下面是 seekdb 混合检索返回的相关冷知识（results 数组，每条 document 是知识点，metadata.category 是分类）。\n\n请根据这些内容回答用户：\n1. 优先用检索到的知识作答，生动有趣；\n2. 检索内容不足以回答时，可以结合常识补充，但不要胡编；\n3. 语气轻松，可适当加一点互动。"
+            - id: af-usr
+              role: user
+              text: "用户提问：{{#start.query#}}\n\n检索结果：{{#fetch_fact.body#}}"
+          selected: false
+          title: 回答冷知识
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 120
+        id: answer_fact
+        position:
+          x: 1000
+          y: 820
+        positionAbsolute:
+          x: 1000
+          y: 820
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: "{{#strip_fact.result#}}"
+          desc: ""
+          selected: false
+          title: 回复知识
+          type: answer
+          variables: []
+        height: 120
+        id: ans_fact
+        position:
+          x: 1300
+          y: 820
+        positionAbsolute:
+          x: 1300
+          y: 820
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context:
+            enabled: false
+            variable_selector: []
+          desc: ""
+          memory:
+            role_prefix:
+              assistant: ""
+              user: ""
+            window:
+              enabled: false
+              size: 10
+            query_prompt_template: "{{#sys.query#}}"
+          model:
+            completion_params:
+              think: false
+            mode: chat
+            name: deepseek-r1:8b
+            provider: ollama
+          prompt_template:
+            - id: ch-sys
+              role: system
+              text: "你是「谜海拾贝」，一个既会出谜语又能讲冷知识的小助手。\n\n用户当前没有明确意图，请友好地自我介绍，并告诉他你可以：\n1. 出谜语（可以说“给我出个谜语”）；\n2. 陪他猜谜（出完谜后直接说答案）；\n3. 讲冷知识（说“讲个冷知识”或问为什么）。"
+            - id: ch-usr
+              role: user
+              text: "{{#start.query#}}"
+          selected: false
+          title: 闲聊兜底
+          type: llm
+          variables: []
+          vision:
+            enabled: false
+        height: 120
+        id: chat
+        position:
+          x: 700
+          y: 1000
+        positionAbsolute:
+          x: 700
+          y: 1000
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          answer: "{{#strip_chat.result#}}"
+          desc: ""
+          selected: false
+          title: 回复闲聊
+          type: answer
+          variables: []
+        height: 120
+        id: ans_chat
+        position:
+          x: 1000
+          y: 1000
+        positionAbsolute:
+          x: 1000
+          y: 1000
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.8

@@ -1,0 +1,29 @@
+version: "3.8"
+
+# seekdb server —— 官方 Docker 镜像
+# 启动: docker compose up -d
+# 停止: docker compose down
+services:
+  seekdb:
+    image: oceanbase/seekdb:latest
+    container_name: stepfun-seekdb
+    ports:
+      - "2881:2881"
+    environment:
+      # ROOT_PASSWORD: ""  # 默认空密码
+      CPU_COUNT: "4"
+      MEMORY_LIMIT: "2G"
+      LOG_DISK_SIZE: "2G"
+      DATAFILE_SIZE: "2G"
+      DATAFILE_NEXT: "2G"
+      DATAFILE_MAXSIZE: "10G"
+    volumes:
+      # 数据持久化
+      - ./seekdb_docker_data:/var/lib/oceanbase
+    healthcheck:
+      test: ["CMD", "mysql", "-uroot", "-h127.0.0.1", "-P2881", "-e", "SELECT 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+    restart: unless-stopped

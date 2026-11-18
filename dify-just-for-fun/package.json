@@ -1,0 +1,22 @@
+{
+  "name": "stepfun",
+  "version": "1.0.0",
+  "description": "OceanBase StepFun 比赛 - 端侧 AI 推理性能优化与 seekdb 混合检索",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "bridge": "node dify/bridge/server.js",
+    "seed": "node dify/bridge/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@huggingface/transformers": "^3.5.1",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "seekdb": "^1.4.0"
+  }
+}
